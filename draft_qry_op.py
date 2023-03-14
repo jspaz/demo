@@ -197,6 +197,12 @@ new_df =Master_join.select(
         coalesce(col('MA.idFeePlan_MOD'), lit('0')).alias('merchant_aud_idfeeplanmod'),
        lit(1).alias('transaction_num_reg'),
 col('M.STATUS').alias('merchant_status')
+).where(
+        (upper(col('M.NAME')).like('%PRUEBA%') == False) & (col('FPC.ID_FEE_PLAN_COSTS').isNull() == False) & 
+        (
+            ((col('MA.UPDATE_TIMESTAMP') >= '2022-01-01') & (col('MA.UPDATE_TIMESTAMP') < '2022-02-01')) |
+            ((col('M.UPDATE_TIMESTAMP') >= '2022-01-01') & (col('M.UPDATE_TIMESTAMP') < '2022-02-01'))
+        )
 )
 display(new_df)
 
