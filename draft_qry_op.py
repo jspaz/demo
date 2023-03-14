@@ -211,4 +211,4 @@ new_df.count()
 
 # COMMAND ----------
 
-new_df.write.format("delta").mode("overwrite").saveAsTable("poc_catalog.silver.result")
+new_df.write.format("delta").mode("overwrite").saveAsTable("poc_catalog.silver.result") 

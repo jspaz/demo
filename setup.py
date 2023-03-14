@@ -15,7 +15,7 @@ from pyspark.sql.functions import col, when, concat, md5, lit, coalesce
 
 # COMMAND ----------
 
-spark.sql("USE CATALOG poc_catalog")
+spark.sql("USE CATALOG poc_catalog") 
 
 # COMMAND ----------
 
