@@ -42,27 +42,6 @@ X = spark.sql("""
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ###Subconsulta AP
-
-# COMMAND ----------
-
-AP = spark.sql("""
-    SELECT M.ID_MERCHANT,
-         IF(MAF.AFFECTS_ACCOUNT=1,
-         "Agregador",
-         IF(MAF.AFFECTS_ACCOUNT=0,
-         "Procesador" ,
-         NULL)) TIPO ,
-         MAF.AFFECTS_ACCOUNT
-                FROM MERCHANTS M
-                JOIN bronze.merchants_affiliations MAF ON M.ID_MERCHANT=MAF.ID_MERCHANT
-                WHERE M.CLASSIFICATION <>'EGLOBAL'
-                GROUP BY  M.ID_MERCHANT,MAF.AFFECTS_ACCOUNT
-""")
-
-# COMMAND ----------
-
-# MAGIC %md
 # MAGIC ###Subconsulta FF
 
 # COMMAND ----------
@@ -104,14 +83,15 @@ Master_join = (spark.table('bronze.merchants').alias('M')
             ((col('FPC.ID_FEE_PLAN') == col('M.ID_FEE_PLAN')) & (col('MA.REV').isNull()))),
            'left')
      .join(spark.table('bronze.rev_info').alias('RI'), col('MA.REV') == col('RI.REV'), 'left')
-     .join(X.alias('X'), col('X.ID_MERCHANT') == col('MA.ID_MERCHANT'), 'left')
+     .join(X.alias('X'), (col('X.ID_MERCHANT') == col('MA.ID_MERCHANT')) & (col('X.M_REV') == col('MA.REV')), 'left')
      .join(FF.alias('FF'), col('FF.ID_MERCHANT') == col('MA.ID_MERCHANT'), 'left')
      .select('M.*', 'MA.*', 'FP.*','FPC.*','RI.*','X.M_REV','FF.max_afecta_cuenta','MI.*')
-              )
-
-# COMMAND ----------
-
-display(Master_join)
+              ).where(
+        (upper(col('M.NAME')).like('%PRUEBA%') == False) & ( (col('FPC.ID_FEE_PLAN_COSTS') != '') 
+            & (col('MA.UPDATE_TIMESTAMP') >= '2022-01-01') & (col('MA.UPDATE_TIMESTAMP') < '2022-02-01') ) 
+         |
+            (col('M.UPDATE_TIMESTAMP') >= '2022-01-01') & (col('M.UPDATE_TIMESTAMP') < '2022-02-01')
+)
 
 # COMMAND ----------
 
@@ -120,7 +100,7 @@ display(Master_join)
 
 # COMMAND ----------
 
-new_df =Master_join.select(
+new_df = Master_join.select(
     md5(concat(col('M.ID_MERCHANT'), col('FPC.ID_FEE_PLAN_COSTS'), when(col('MA.REV').isNull(), 'NA').otherwise(col('MA.REV')))).alias('id_document_key'),
     col('FPC.ID_FEE_PLAN_COSTS').alias('plan_id_fee_plan_costs'),
     col('M.ID').alias('merchant_id'),
@@ -197,12 +177,6 @@ new_df =Master_join.select(
         coalesce(col('MA.idFeePlan_MOD'), lit('0')).alias('merchant_aud_idfeeplanmod'),
        lit(1).alias('transaction_num_reg'),
 col('M.STATUS').alias('merchant_status')
-).where(
-        (upper(col('M.NAME')).like('%PRUEBA%') == False) & (col('FPC.ID_FEE_PLAN_COSTS').isNull() == False) & 
-        (
-            ((col('MA.UPDATE_TIMESTAMP') >= '2022-01-01') & (col('MA.UPDATE_TIMESTAMP') < '2022-02-01')) |
-            ((col('M.UPDATE_TIMESTAMP') >= '2022-01-01') & (col('M.UPDATE_TIMESTAMP') < '2022-02-01'))
-        )
 )
 display(new_df)
 

@@ -6,7 +6,7 @@
 
 from pyspark.sql.functions import col
 from pyspark.sql.functions import max, col
-from pyspark.sql.functions import col, when, concat, md5, lit, coalesce
+from pyspark.sql.functions import col, when, concat, md5, lit, coalesce, upper
 
 # COMMAND ----------
 
